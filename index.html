@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jumbled Sentence Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f8ff;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      margin: 20px;
+      color: #333;
+    }
+
+    .game-container {
+      margin: 20px auto;
+      padding: 20px;
+      max-width: 600px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .word-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    button {
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      color: #666;
+      cursor: not-allowed;
+    }
+
+    #constructed-sentence {
+      font-size: 1.2em;
+      margin: 20px 0;
+      color: #333;
+      min-height: 30px;
+    }
+
+    #score {
+      font-size: 1.5em;
+      color: #4caf50;
+      margin: 10px 0;
+    }
+
+    #skip-info, #mistakes-info {
+      font-size: 1.2em;
+      color: #f44336;
+      margin-top: 10px;
+    }
+
+    #feedback {
+      font-size: 1.2em;
+      color: #4caf50;
+      margin-top: 10px;
+      display: none;
+    }
+
+    #game-over {
+      font-size: 2em;
+      font-weight: bold;
+      color: red;
+      margin-top: 20px;
+      display: none;
+    }
+
+    #reset-btn, #skip-btn, #start-over-btn {
+      background-color: #f44336;
+      margin-top: 10px;
+    }
+
+    #reset-btn:hover, #skip-btn:hover, #start-over-btn:hover {
+      background-color: #e53935;
+    }
+
+    /* Elegant Styling for Mistakes and Skips */
+    .info {
+      display: flex;
+      justify-content: center;
+      margin: 10px 0;
+    }
+
+    .info div {
+      font-size: 1.2em;
+      background-color: #f5f5f5;
+      padding: 8px 15px;
+      border-radius: 5px;
+      margin: 0 10px;
+      color: #333;
+      font-weight: bold;
+    }
+
+    .info div span {
+      color: #4caf50;
+    }
+
+    /* Blackout Screen when game is over */
+    #blackout {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: none;
+      z-index: 999;
+    }
+
+    /* Make sure Start Over button is above blackout */
+    #start-over-btn {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1000; /* Higher than blackout */
+      display: none;
+    }
+
+  </style>
+</head>
+<body>
+  <h1>Jumbled Sentence Game</h1>
+  <div class="game-container">
+    <div id="score">Score: 0</div>
+    <div class="info">
+      <div id="skip-info">Skips available: <span>1</span></div>
+      <div id="mistakes-info">Mistakes available: <span>0</span></div>
+    </div>
+    <div id="feedback"></div>
+    <div id="constructed-sentence">Your constructed sentence:</div>
+    <div class="word-buttons" id="word-buttons"></div>
+    <button id="skip-btn">Skip</button>
+    <button id="reset-btn">Reset Game</button>
+  </div>
+
+  <div id="game-over">Game Over! Final Score: 0</div>
+  <div id="blackout"></div>
+
+  <div id="start-over-btn">
+    <button onclick="startOver()">Start Over</button>
+  </div>
+
+  <script>
+    const sentences = [
+      "Experience and sincerity amplified the benefits of various precepts.",
+      "Gradually, the awareness of the interference trapped consciousness and restricted rescue efforts.",
+      "I have a lot of experience in cooking.",
+      "She gained experience from her summer job.",
+      "I want to participate in the school play.",
+      "They will participate in the sports event.",
+      "The company’s profits grew exponentially.",
+      "Her skills improved exponentially after practice.",
+      "The sound was amplified by the speakers.",
+      "His voice was amplified by the microphone.",
+      "She has various hobbies like painting and reading.",
+      "The store sells various types of shoes.",
+      "His sincerity was clear in his speech.",
+      "I appreciate your sincerity in the matter.",
+      "She was earnest about learning French.",
+      "He gave an earnest apology for his mistake.",
+      "The teacher taught us the precepts of honesty.",
+      "He followed the precepts of kindness in his life.",
+      "There is a restriction on how many people can attend.",
+      "The government imposed a restriction on travel.",
+      "The movie was very enjoyable.",
+      "We had an enjoyable time at the beach.",
+      "The cat was trapped in the tree.",
+      "He felt trapped in his routine job.",
+      "He regained consciousness after the fall.",
+      "The doctor checked his consciousness after the operation.",
+      "Reading books is beneficial for your brain.",
+      "A healthy diet is beneficial to your health.",
+      "The firefighters came to rescue the cat.",
+      "They planned a rescue mission for the hikers.",
+      "He is paying off his debts slowly.",
+      "She borrowed money and now has many debts.",
+      "There was interference in the phone call.",
+      "His interference in the game was not allowed.",
+      "There is greater awareness about the environment.",
+      "The campaign raised awareness for animal rights.",
+      "The weather gradually became colder.",
+      "He gradually improved in math over time.",
+      "Water condenses into droplets on a cold surface.",
+      "The fog condenses as the temperature drops."
+    ];
+
+    let remainingSentences = [...sentences];
+    let currentSentence = "";
+    let jumbledWords = [];
+    let userConstructedWords = [];
+    let score = 0;
+    let skipUsed = 0;
+    let skipsAvailable = 1;
+    let mistakes = 0;
+
+    const scoreDisplay = document.getElementById("score");
+    const skipInfoDisplay = document.getElementById("skip-info");
+    const mistakesInfoDisplay = document.getElementById("mistakes-info");
+    const wordButtonsContainer = document.getElementById("word-buttons");
+    const constructedSentenceDisplay = document.getElementById("constructed-sentence");
+    const feedbackDisplay = document.getElementById("feedback");
+    const gameOverDisplay = document.getElementById("game-over");
+    const blackout = document.getElementById("blackout");
+    const startOverButton = document.getElementById("start-over-btn");
+    const skipButton = document.getElementById("skip-btn");
+    const resetButton = document.getElementById("reset-btn");
+
+    // Initialize the game
+    function initializeGame() {
+      if (remainingSentences.length === 0) {
+        showGameOver();
+        return;
+      }
+
+      const randomIndex = Math.floor(Math.random() * remainingSentences.length);
+      currentSentence = remainingSentences[randomIndex];
+      remainingSentences.splice(randomIndex, 1);
+
+      jumbledWords = shuffleArray(currentSentence.split(" "));
+      userConstructedWords = [];
+      renderButtons();
+      updateConstructedSentence();
+    }
+
+    // Shuffle words randomly
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    // Render buttons for the shuffled words
+    function renderButtons() {
+      wordButtonsContainer.innerHTML = "";
+      jumbledWords.forEach((word, index) => {
+        const button = document.createElement("button");
+        button.textContent = word;
+        button.onclick = () => handleWordClick(word, button);
+        wordButtonsContainer.appendChild(button);
+      });
+    }
+
+    // Handle word button click
+    function handleWordClick(word, button) {
+      // If word is already added to the constructed sentence, unclick it
+      if (userConstructedWords.includes(word)) {
+        userConstructedWords = userConstructedWords.filter(item => item !== word);
+        button.style.backgroundColor = "#4caf50";
+      } else {
+        userConstructedWords.push(word);
+        button.style.backgroundColor = "#ccc";
+      }
+
+      updateConstructedSentence();
+
+      // Check if the sentence is fully constructed
+      if (userConstructedWords.length === jumbledWords.length) {
+        checkSentence();
+      }
+    }
+
+    // Update the displayed constructed sentence
+    function updateConstructedSentence() {
+      constructedSentenceDisplay.textContent = userConstructedWords.join(" ");
+    }
+
+    // Check if the constructed sentence is correct
+    function checkSentence() {
+      const userSentence = userConstructedWords.join(" ");
+      if (userSentence === currentSentence) {
+        score++;
+        scoreDisplay.textContent = `Score: ${score}`;
+
+        // Show a super sweet message if score reaches 10
+        if (score === 10) {
+          showFeedback("🌟 Wow, you're absolutely amazing! You’ve reached 10 points, and I couldn’t be more impressed. You’re truly a star! 🌟", 5000);  // Extended time for 10 points
+        }
+        // Show a super sweet message in Chinese if score reaches 20
+        else if (score === 20) {
+          showFeedback("🌸 你太棒了！你已经达到了20分，简直是无敌的存在！你是我的超级明星！🌸", 5000);  // Extended time for 20 points
+        } else {
+          showFeedback("🎉 Correct! You've earned a point.");
+        }
+
+        increaseSkips();
+        initializeGame();
+      } else {
+        handleMistake();
+      }
+    }
+
+    // Increase skips every 5 points
+    function increaseSkips() {
+      if (score % 5 === 0 && score > 0) {
+        skipsAvailable++;
+        skipInfoDisplay.textContent = `Skips available: ${skipsAvailable}`;
+      }
+    }
+
+    // Handle mistakes
+    function handleMistake() {
+      if (mistakes < 1) {
+        mistakes++;
+        mistakesInfoDisplay.textContent = `Mistakes available: ${mistakes}`;
+        showFeedback("❌ Incorrect. You have one more chance.");
+      } else {
+        showGameOver();
+      }
+    }
+
+    // Show feedback message elegantly
+    function showFeedback(message, duration = 2000) {
+      feedbackDisplay.textContent = message;
+      feedbackDisplay.style.display = "block";
+      setTimeout(() => {
+        feedbackDisplay.style.display = "none";
+      }, duration); // Allow custom duration
+    }
+
+    // Show Game Over message
+    function showGameOver() {
+      blackout.style.display = "block";
+      gameOverDisplay.style.display = "block";
+      gameOverDisplay.textContent = `Game Over! Final Score: ${score}`;
+      setTimeout(() => {
+        gameOverDisplay.style.display = "none";
+      }, 3000); // Hide after 3 seconds
+
+      startOverButton.style.display = "block"; // Show the Start Over button
+    }
+
+    // Handle skip button
+    function handleSkip() {
+      if (skipsAvailable > 0) {
+        skipsAvailable--;
+        skipInfoDisplay.textContent = `Skips available: ${skipsAvailable}`;
+        initializeGame(); // Load next sentence
+      } else {
+        showFeedback("❌ No skips available!");
+      }
+    }
+
+    // Start Over functionality
+    function startOver() {
+      blackout.style.display = "none"; // Hide blackout
+      startOverButton.style.display = "none"; // Hide Start Over button
+      resetGame(); // Reset the game and start over
+    }
+
+    // Reset the game
+    function resetGame() {
+      score = 0;
+      skipsAvailable = 1;
+      mistakes = 0;
+      remainingSentences = [...sentences];
+      skipInfoDisplay.textContent = `Skips available: ${skipsAvailable}`;
+      mistakesInfoDisplay.textContent = `Mistakes available: ${mistakes}`;
+      scoreDisplay.textContent = "Score: 0";
+      initializeGame();
+    }
+
+    // Event Listeners
+    resetButton.onclick = resetGame;
+    skipButton.onclick = handleSkip;
+    startOverButton.onclick = startOver;
+
+    // Start the game
+    initializeGame();
+  </script>
+</body>
+</html>
